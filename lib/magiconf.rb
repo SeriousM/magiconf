@@ -42,7 +42,8 @@ module Magiconf
   def config
     @config ||= begin
       config = YAML::load( ERB.new( File.read('config/application.yml') ).result )
-      config.merge!( config.fetch(Rails.env, {}) )
+      # get env config and non-env/global config
+      config = config.select{|k,v| !v.is_a? Hash}.merge(config.fetch(Rails.env, {}))
       config.symbolize_keys!
       config
     end
