@@ -37,11 +37,23 @@ module Magiconf
     @nodule ||= namespace.const_set('Config', Module.new)
   end
 
+  def path
+    @path ||= Rails.root.join('config/application.yml')
+  end
+
+  def yaml
+    @yaml ||= File.exist?(path) ? File.read(path) : nil
+  end
+  
+  def rawConfig
+    @raw ||= yaml && YAML::load( ERB.new(yaml).result ) || {}
+  end
+
   # The configuration yaml file
   # @return [Hash] the parsed yaml data
   def config
     @config ||= begin
-      config = YAML::load( ERB.new( File.read('config/application.yml') ).result )
+      config = rawConfig
       # get env config and non-env/global config
       config = config.select{|k,v| !v.is_a? Hash}.merge(config.fetch(Rails.env, {}))
       
