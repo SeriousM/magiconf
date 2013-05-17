@@ -1,3 +1,5 @@
+module Magiconfig; end
+
 module Magiconf
   extend self
 
@@ -24,21 +26,23 @@ module Magiconf
                                            # Object and find RbConfig
   end
 
-  private
   # Get the namespace for the current application
   # @return [Module] the namespace of the Rails app
   def namespace
-    @namespace ||= Rails.application.class.parent_name.constantize
+    @namespace ||= Rails.application.class.parent_name.constantize if defined?(Rails)
+    @namespace ||= Magiconfig
   end
 
+  def path
+    @path ||= Rails.root.join('config/application.yml') if defined?(Rails)
+    @path ||= Sinatra::Application.root.join('config/application.yml') if defined?(Sinatra)
+  end
+
+  private
   # Create a new Config module in the current namespace
   # @return [Module] the created module
   def nodule
     @nodule ||= namespace.const_set('Config', Module.new)
-  end
-
-  def path
-    @path ||= Rails.root.join('config/application.yml')
   end
 
   def yaml
@@ -55,7 +59,18 @@ module Magiconf
     @config ||= begin
       config = rawConfig
       # get env config and non-env/global config
-      config = config.select{|k,v| !v.is_a? Hash}.merge(config.fetch(Rails.env, {}))
+
+      if defined?(Rails)
+        env = Rails.env
+      elsif defined?(Sinatra)
+        env = "development" if Sinatra::Base.development?
+        env = "production" if Sinatra::Base.production?
+      else
+        logger.warn "Magiconf: Rails and Sinatra are not defined, fallback to 'development' environment."
+        env = "development"
+      end
+
+      config = config.select{|k,v| !v.is_a? Hash}.merge(config.fetch(env, {}))
       
       # extend the ENV variables with the config values
       config.each{|k,v| ENV[k] = v}
