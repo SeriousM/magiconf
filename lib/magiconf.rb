@@ -1,3 +1,5 @@
+require 'pathname'
+
 module Magiconfig; end
 
 module Magiconf
@@ -35,7 +37,7 @@ module Magiconf
 
   def path
     @path ||= Rails.root.join('config/application.yml') if defined?(Rails)
-    @path ||= Sinatra::Application.root.join('config/application.yml') if defined?(Sinatra)
+    @path ||= Pathname.new(Sinatra::Application.root).join('config/application.yml') if defined?(Sinatra)
   end
 
   private
